@@ -28,21 +28,49 @@ func TestCopyCmdEndToEnd(t *testing.T) {
 	}
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	src := filepath.Join(srcDir, "image (2).png")
-	if err := os.WriteFile(src, []byte("test-content"), 0o644); err != nil {
+	// Two files from different directories, as a multi-file drag-and-drop
+	// produces, plus a nested directory.
+	otherDir := filepath.Join(base, "other's dir")
+	subDir := filepath.Join(srcDir, "shots dir")
+	if err := os.MkdirAll(otherDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.MkdirAll(subDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		filepath.Join(srcDir, "image (2).png"):     "content-one",
+		filepath.Join(otherDir, "второй файл.png"): "content-two",
+		filepath.Join(subDir, "nested.png"):        "content-three",
+	}
+	for p, c := range files {
+		if err := os.WriteFile(p, []byte(c), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 
-	cmd := CopyCmd("myhost", []string{src}, dstDir)
+	srcs := []string{
+		filepath.Join(srcDir, "image (2).png"),
+		filepath.Join(otherDir, "второй файл.png"),
+		subDir, // whole directory
+	}
+	cmd := CopyCmd("myhost", srcs, dstDir)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("pipeline failed: %v\n%s", err, out)
 	}
 
-	got, err := os.ReadFile(filepath.Join(dstDir, "image (2).png"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != "test-content" {
-		t.Errorf("content = %q", got)
+	for dst, want := range map[string]string{
+		filepath.Join(dstDir, "image (2).png"):           "content-one",
+		filepath.Join(dstDir, "второй файл.png"):         "content-two",
+		filepath.Join(dstDir, "shots dir", "nested.png"): "content-three",
+	} {
+		got, err := os.ReadFile(dst)
+		if err != nil {
+			t.Errorf("missing %s: %v", dst, err)
+			continue
+		}
+		if string(got) != want {
+			t.Errorf("%s content = %q, want %q", dst, got, want)
+		}
 	}
 }

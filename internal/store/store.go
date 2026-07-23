@@ -1,5 +1,7 @@
-// Package store keeps per-host target directories: preconfigured ones from
-// config.yaml and a most-recently-used history in history.json.
+// Package store keeps per-host target directories and usage statistics:
+// preconfigured directories from config.yaml plus use counts and last-use
+// times in history.json, so frequently used servers and directories can be
+// offered first.
 package store
 
 import (
@@ -30,14 +32,28 @@ type ServerConfig struct {
 // HistEntry is one remembered target directory.
 type HistEntry struct {
 	Path     string    `json:"path"`
+	Count    int       `json:"count"`
 	LastUsed time.Time `json:"last_used"`
+}
+
+// HostUse is the usage record of one server.
+type HostUse struct {
+	Count    int       `json:"count"`
+	LastUsed time.Time `json:"last_used"`
+}
+
+// histFile is the on-disk layout of history.json.
+type histFile struct {
+	Hosts map[string]HostUse     `json:"hosts"`
+	Dirs  map[string][]HistEntry `json:"dirs"`
 }
 
 // Store combines config and history.
 type Store struct {
-	dir  string
-	cfg  Config
-	hist map[string][]HistEntry
+	dir   string
+	cfg   Config
+	hosts map[string]HostUse
+	dirs  map[string][]HistEntry
 }
 
 // Open loads (or lazily creates) the store under the user config dir.
@@ -50,7 +66,11 @@ func Open() (*Store, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
-	s := &Store{dir: dir, hist: map[string][]HistEntry{}}
+	s := &Store{
+		dir:   dir,
+		hosts: map[string]HostUse{},
+		dirs:  map[string][]HistEntry{},
+	}
 
 	if data, err := os.ReadFile(filepath.Join(dir, "config.yaml")); err == nil {
 		if err := yaml.Unmarshal(data, &s.cfg); err != nil {
@@ -58,12 +78,35 @@ func Open() (*Store, error) {
 		}
 	}
 	if data, err := os.ReadFile(filepath.Join(dir, "history.json")); err == nil {
-		if err := json.Unmarshal(data, &s.hist); err != nil {
-			// A corrupt history should not brick the tool.
-			s.hist = map[string][]HistEntry{}
-		}
+		s.loadHistory(data)
 	}
 	return s, nil
+}
+
+// loadHistory accepts both the current {hosts, dirs} layout and the legacy
+// flat map of host -> entries. A corrupt file must not brick the tool.
+func (s *Store) loadHistory(data []byte) {
+	var f histFile
+	if err := json.Unmarshal(data, &f); err == nil && (f.Hosts != nil || f.Dirs != nil) {
+		if f.Hosts != nil {
+			s.hosts = f.Hosts
+		}
+		if f.Dirs != nil {
+			s.dirs = f.Dirs
+		}
+		return
+	}
+	var legacy map[string][]HistEntry
+	if err := json.Unmarshal(data, &legacy); err == nil {
+		for host, entries := range legacy {
+			for i := range entries {
+				if entries[i].Count == 0 {
+					entries[i].Count = 1
+				}
+			}
+			s.dirs[host] = entries
+		}
+	}
 }
 
 // ConfigPath returns the path of the user-editable config file.
@@ -71,15 +114,23 @@ func (s *Store) ConfigPath() string {
 	return filepath.Join(s.dir, "config.yaml")
 }
 
-// Dirs returns target directories for a host: history first (most recently
-// used on top), then preconfigured dirs that were never used.
+// byUsage orders higher use counts first, breaking ties by recency.
+func byUsage(ci, cj int, ti, tj time.Time) bool {
+	if ci != cj {
+		return ci > cj
+	}
+	return ti.After(tj)
+}
+
+// Dirs returns target directories for a host: most frequently used first
+// (ties broken by recency), then preconfigured dirs that were never used.
 func (s *Store) Dirs(host string) []string {
 	seen := map[string]bool{}
 	var out []string
 
-	entries := append([]HistEntry(nil), s.hist[host]...)
+	entries := append([]HistEntry(nil), s.dirs[host]...)
 	sort.SliceStable(entries, func(i, j int) bool {
-		return entries[i].LastUsed.After(entries[j].LastUsed)
+		return byUsage(entries[i].Count, entries[j].Count, entries[i].LastUsed, entries[j].LastUsed)
 	})
 	for _, e := range entries {
 		if !seen[e.Path] {
@@ -96,30 +147,42 @@ func (s *Store) Dirs(host string) []string {
 	return out
 }
 
-// Touch records that dir was just used for host and persists the history.
+// HostUse reports the usage record for a host alias.
+func (s *Store) HostUse(alias string) HostUse {
+	return s.hosts[alias]
+}
+
+// Touch records that dir on host was just used and persists the history.
 func (s *Store) Touch(host, dir string) error {
 	now := time.Now()
-	entries := s.hist[host]
+
+	use := s.hosts[host]
+	use.Count++
+	use.LastUsed = now
+	s.hosts[host] = use
+
+	entries := s.dirs[host]
 	found := false
 	for i := range entries {
 		if entries[i].Path == dir {
+			entries[i].Count++
 			entries[i].LastUsed = now
 			found = true
 			break
 		}
 	}
 	if !found {
-		entries = append(entries, HistEntry{Path: dir, LastUsed: now})
+		entries = append(entries, HistEntry{Path: dir, Count: 1, LastUsed: now})
 	}
 	sort.SliceStable(entries, func(i, j int) bool {
-		return entries[i].LastUsed.After(entries[j].LastUsed)
+		return byUsage(entries[i].Count, entries[j].Count, entries[i].LastUsed, entries[j].LastUsed)
 	})
 	if len(entries) > maxHistPerHost {
 		entries = entries[:maxHistPerHost]
 	}
-	s.hist[host] = entries
+	s.dirs[host] = entries
 
-	data, err := json.MarshalIndent(s.hist, "", "  ")
+	data, err := json.MarshalIndent(histFile{Hosts: s.hosts, Dirs: s.dirs}, "", "  ")
 	if err != nil {
 		return err
 	}

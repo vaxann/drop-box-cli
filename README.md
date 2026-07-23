@@ -31,10 +31,11 @@ Target directory on gpu-box:
    path(s); press **Enter**. Quoted, backslash-escaped and `file://` paths
    from any common terminal are understood.
 3. Pick a server from your `~/.ssh/config` — arrow keys, digits `1-9`, or
-   just type to filter. `Include` directives are followed; wildcard entries
-   (`Host *`) are skipped.
+   just type to filter. Your most frequently used servers float to the top,
+   so the usual destination is one keypress away. `Include` directives are
+   followed; wildcard entries (`Host *`) are skipped.
 4. Pick a target directory: preconfigured directories for that server plus
-   every directory you have used before, sorted by most recently used. Or
+   every directory you have used before, most frequently used first. Or
    enter a new one — it is remembered.
 5. The directory is created on the server if needed (`~` is expanded
    remotely), the file is copied with `scp`, and the remote absolute path is

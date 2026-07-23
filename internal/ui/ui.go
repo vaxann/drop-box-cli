@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -63,9 +64,10 @@ type Model struct {
 	dirInput textinput.Model
 	pick     picker
 
-	files     []string // local files being sent
-	host      string   // chosen host alias
-	chosenDir string   // dir as typed/configured (may contain ~)
+	files     []string       // local files being sent
+	sorted    []sshconf.Host // hosts as currently listed, most used first
+	host      string         // chosen host alias
+	chosenDir string         // dir as typed/configured (may contain ~)
 
 	errMsg string
 }
@@ -96,9 +98,20 @@ func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m Model) serverPicker() picker {
-	items := make([]pickItem, len(m.hosts))
-	for i, h := range m.hosts {
+// serverPicker rebuilds the host list, most frequently used servers first
+// (ties broken by recency, then config order), so they land on keys 1-9.
+func (m *Model) serverPicker() picker {
+	m.sorted = append(m.sorted[:0:0], m.hosts...)
+	sort.SliceStable(m.sorted, func(i, j int) bool {
+		ui, uj := m.st.HostUse(m.sorted[i].Alias), m.st.HostUse(m.sorted[j].Alias)
+		if ui.Count != uj.Count {
+			return ui.Count > uj.Count
+		}
+		return ui.LastUsed.After(uj.LastUsed)
+	})
+
+	items := make([]pickItem, len(m.sorted))
+	for i, h := range m.sorted {
 		desc := h.HostName
 		if h.User != "" && desc != "" {
 			desc = h.User + "@" + desc
@@ -193,7 +206,7 @@ func (m Model) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case statePickServer:
 		switch m.pick.Update(msg) {
 		case pickerChosen:
-			m.host = m.hosts[m.pick.Selected()].Alias
+			m.host = m.sorted[m.pick.Selected()].Alias
 			m.errMsg = ""
 			dirs := m.st.Dirs(m.host)
 			if len(dirs) == 0 {

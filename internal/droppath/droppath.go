@@ -15,12 +15,12 @@ import (
 // Parse splits a dropped line into individual file paths.
 func Parse(line string) []string {
 	var (
-		paths          []string
-		cur            strings.Builder
-		inSingle       bool
-		inDouble       bool
-		escaped        bool
-		hasContent     bool
+		paths      []string
+		cur        strings.Builder
+		inSingle   bool
+		inDouble   bool
+		escaped    bool
+		hasContent bool
 	)
 	flush := func() {
 		if hasContent {
