@@ -1,0 +1,87 @@
+# drop-box-cli
+
+Drag-and-drop a file into a terminal window and beam it to an SSH server —
+get back the file's **absolute path on the server**, already copied to your
+clipboard. Handy when you need to hand a screenshot or any local file to an
+LLM/agent that lives on a remote machine.
+
+```
+drop-box-cli  — drag a file into this window
+→ /home/me/Pictures/screenshot.png⏎
+
+Send "screenshot.png" to which server?
+▸ 1. gpu-box  me@gpu.example.com
+  2. staging  deploy@staging.example.com
+
+Target directory on gpu-box:
+▸ 1. ~/inbox
+  2. /srv/uploads
+  ✎  enter a new path…
+
+✓ gpu-box:/home/me/inbox/screenshot.png
+  copied to clipboard via wl-copy
+```
+
+## How it works
+
+1. Run `drop-box-cli` in a dedicated terminal window. It waits for input.
+2. Drag a file (or several) onto the window — the terminal inserts the
+   path(s); press **Enter**. Quoted, backslash-escaped and `file://` paths
+   from any common terminal are understood.
+3. Pick a server from your `~/.ssh/config` — arrow keys, digits `1-9`, or
+   just type to filter. `Include` directives are followed; wildcard entries
+   (`Host *`) are skipped.
+4. Pick a target directory: preconfigured directories for that server plus
+   every directory you have used before, sorted by most recently used. Or
+   enter a new one — it is remembered.
+5. The directory is created on the server if needed (`~` is expanded
+   remotely), the file is copied with `scp`, and the remote absolute path is
+   printed and copied to the clipboard.
+
+Transfers use your system `ssh`/`scp`, so keys, `ssh-agent`, `ProxyJump`,
+`ControlMaster` and everything else in your SSH config just work.
+
+## Install
+
+```sh
+go install github.com/vaxann/drop-box-cli@latest
+```
+
+Requires Go ≥ 1.22 to build and OpenSSH (`ssh`/`scp`) at runtime. For the
+clipboard, one of `wl-copy`, `xclip`, `xsel` or `pbcopy` (macOS) is used if
+present; without one the path is still printed.
+
+## Usage
+
+```sh
+drop-box-cli              # loop mode: waits for drag-and-dropped files
+drop-box-cli file.png     # one-shot: send the given file(s) and exit
+drop-box-cli --version
+```
+
+Keys: type to filter · `↑`/`↓` move · `1-9` quick-select · `Enter` confirm ·
+`Esc` back (quit from the first screen) · `Ctrl+C` quit anywhere.
+
+## Configuration
+
+Optional. Preconfigure target directories per server in
+`~/.config/drop-box-cli/config.yaml` (macOS:
+`~/Library/Application Support/drop-box-cli/config.yaml`):
+
+```yaml
+servers:
+  gpu-box:            # alias from ~/.ssh/config
+    dirs:
+      - ~/inbox
+      - /srv/uploads
+  staging:
+    dirs:
+      - /var/www/uploads
+```
+
+Directory usage history is kept next to it in `history.json` (most recently
+used first, 50 entries per server).
+
+## License
+
+MIT

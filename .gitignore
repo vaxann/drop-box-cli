@@ -1,0 +1,3 @@
+/drop-box-cli
+dist/
+*.test
