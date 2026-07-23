@@ -140,7 +140,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		abs := msg.dir
 		return m, tea.ExecProcess(
-			transfer.ScpCmd(m.host, m.files, abs),
+			transfer.CopyCmd(m.host, m.files, abs),
 			func(err error) tea.Msg { return scpDoneMsg{absDir: abs, err: err} },
 		)
 	case scpDoneMsg:

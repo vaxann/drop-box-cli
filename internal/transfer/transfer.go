@@ -6,6 +6,7 @@ package transfer
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -17,15 +18,28 @@ func ResolveCmd(host, dir string) *exec.Cmd {
 	return exec.Command("ssh", "--", host, remote)
 }
 
-// ScpCmd returns a command copying files into absDir on host. absDir must
-// already be absolute (see ResolveCmd).
-func ScpCmd(host string, files []string, absDir string) *exec.Cmd {
-	args := []string{"-r", "--"}
+// CopyCmd returns a command that streams files (or directories) into
+// absDir on host via tar over ssh. absDir must already be absolute (see
+// ResolveCmd).
+//
+// scp is deliberately avoided: how it treats the remote path depends on
+// the local OpenSSH version — the classic protocol runs it through the
+// remote shell while the sftp default (OpenSSH >= 9.0) takes it near
+// literally — so no single escaping is correct for both. A tar pipe keeps
+// all quoting on our side of a plain ssh command.
+func CopyCmd(host string, files []string, absDir string) *exec.Cmd {
+	var b strings.Builder
+	b.WriteString("tar -cf -")
 	for _, f := range files {
-		args = append(args, safeLocal(f))
+		dir, name := filepath.Split(filepath.Clean(f))
+		if dir == "" {
+			dir = "."
+		}
+		fmt.Fprintf(&b, " -C %s %s", singleQuote(dir), singleQuote("./"+name))
 	}
-	args = append(args, host+":"+EscapeRemote(absDir)+"/")
-	return exec.Command("scp", args...)
+	remote := fmt.Sprintf("cd -- %s && tar -xf -", singleQuote(absDir))
+	fmt.Fprintf(&b, " | ssh -- %s %s", singleQuote(host), singleQuote(remote))
+	return exec.Command("sh", "-c", b.String())
 }
 
 // RemoteArg quotes a user-supplied directory for use inside a remote shell
@@ -41,29 +55,6 @@ func RemoteArg(dir string) string {
 	}
 }
 
-// EscapeRemote backslash-escapes a remote path for use in an scp remote
-// operand, which is interpreted by the remote shell (classic mode) or by
-// scp's own glob parser (sftp mode).
-func EscapeRemote(p string) string {
-	var b strings.Builder
-	for _, r := range p {
-		if strings.ContainsRune(" \t'\"\\$&;()<>|*?[]{}#!`~^", r) {
-			b.WriteByte('\\')
-		}
-		b.WriteRune(r)
-	}
-	return b.String()
-}
-
 func singleQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
-}
-
-// safeLocal guards against a local path being mistaken for a remote spec:
-// scp treats anything before the first ':' as a host name.
-func safeLocal(p string) string {
-	if !strings.Contains(p, "/") && strings.Contains(p, ":") {
-		return "./" + p
-	}
-	return p
 }

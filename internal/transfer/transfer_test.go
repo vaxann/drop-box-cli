@@ -20,17 +20,22 @@ func TestRemoteArg(t *testing.T) {
 	}
 }
 
-func TestEscapeRemote(t *testing.T) {
-	if got := EscapeRemote("/srv/my files/in(1)"); got != `/srv/my\ files/in\(1\)` {
-		t.Errorf("EscapeRemote = %s", got)
+func TestCopyCmd(t *testing.T) {
+	cmd := CopyCmd("web", []string{"/tmp/a.png", "/data/my file (2).png"}, "/srv/in box")
+	want := []string{"sh", "-c",
+		`tar -cf - -C '/tmp/' './a.png' -C '/data/' './my file (2).png'` +
+			` | ssh -- 'web' 'cd -- '\''/srv/in box'\'' && tar -xf -'`}
+	if !reflect.DeepEqual(cmd.Args, want) {
+		t.Errorf("args = %#v, want %#v", cmd.Args, want)
 	}
 }
 
-func TestScpCmdArgs(t *testing.T) {
-	cmd := ScpCmd("web", []string{"/tmp/a.png", "b:tricky.png"}, "/srv/in box")
-	want := []string{"scp", "-r", "--", "/tmp/a.png", "./b:tricky.png", `web:/srv/in\ box/`}
+func TestCopyCmdTrailingSlashDir(t *testing.T) {
+	cmd := CopyCmd("web", []string{"/tmp/some dir/"}, "/dst")
+	want := []string{"sh", "-c",
+		`tar -cf - -C '/tmp/' './some dir' | ssh -- 'web' 'cd -- '\''/dst'\'' && tar -xf -'`}
 	if !reflect.DeepEqual(cmd.Args, want) {
-		t.Errorf("args = %v, want %v", cmd.Args, want)
+		t.Errorf("args = %#v, want %#v", cmd.Args, want)
 	}
 }
 
