@@ -44,13 +44,18 @@ func main() {
 		fatal(fmt.Sprintf("reading ~/.ssh/config: %v", err))
 	}
 	if len(hosts) == 0 {
-		fatal("no Host entries found in ~/.ssh/config — add your servers there first")
+		fatal("no usable Host entries in ~/.ssh/config — add your servers there first\n" +
+			"(code-hosting entries like github.com/gitlab.com are hidden)")
 	}
 
 	st, err := store.Open()
 	if err != nil {
 		fatal(fmt.Sprintf("opening config store: %v", err))
 	}
+
+	// Start from a clean window: clear the screen, the scrollback and home
+	// the cursor. The TUI then owns the whole visible area.
+	fmt.Print("\033[H\033[2J\033[3J")
 
 	p := tea.NewProgram(ui.New(hosts, st, files))
 	if _, err := p.Run(); err != nil {

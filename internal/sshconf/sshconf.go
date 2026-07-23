@@ -18,6 +18,20 @@ type Host struct {
 
 const maxIncludeDepth = 8
 
+// serviceHosts are well-known code-hosting endpoints that are never file
+// transfer destinations, so they are hidden from the server list.
+var serviceHosts = map[string]bool{
+	"github.com":              true,
+	"ssh.github.com":          true,
+	"gist.github.com":         true,
+	"gitlab.com":              true,
+	"bitbucket.org":           true,
+	"codeberg.org":            true,
+	"git.sr.ht":               true,
+	"ssh.dev.azure.com":       true,
+	"vs-ssh.visualstudio.com": true,
+}
+
 // Load reads hosts from ~/.ssh/config.
 func Load() ([]Host, error) {
 	home, err := os.UserHomeDir()
@@ -36,9 +50,13 @@ func LoadFile(path string) ([]Host, error) {
 	if err := p.parseFile(path, 0); err != nil {
 		return nil, err
 	}
-	hosts := make([]Host, len(p.order))
-	for i, alias := range p.order {
-		hosts[i] = *p.byAlias[alias]
+	hosts := make([]Host, 0, len(p.order))
+	for _, alias := range p.order {
+		h := *p.byAlias[alias]
+		if serviceHosts[strings.ToLower(h.Alias)] || serviceHosts[strings.ToLower(h.HostName)] {
+			continue
+		}
+		hosts = append(hosts, h)
 	}
 	return hosts, nil
 }

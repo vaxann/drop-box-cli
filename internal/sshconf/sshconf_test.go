@@ -36,6 +36,12 @@ Host "quoted host"
 Host wild-*
   HostName ignored.example.com
 
+Host github.com gitlab.com
+  User git
+
+Host gh-alias
+  HostName github.com
+
 Include `+extra+`
 
 Match user deploy

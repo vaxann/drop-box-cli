@@ -33,7 +33,8 @@ Target directory on gpu-box:
 3. Pick a server from your `~/.ssh/config` — arrow keys, digits `1-9`, or
    just type to filter. Your most frequently used servers float to the top,
    so the usual destination is one keypress away. `Include` directives are
-   followed; wildcard entries (`Host *`) are skipped.
+   followed; wildcard entries (`Host *`) and code-hosting services
+   (github.com, gitlab.com, bitbucket.org, …) are hidden.
 4. Pick a target directory: preconfigured directories for that server plus
    every directory you have used before, most frequently used first. Or
    enter a new one — it is remembered.
