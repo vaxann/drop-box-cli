@@ -1,5 +1,7 @@
 # drop-box-cli
 
+[![build](https://github.com/vaxann/drop-box-cli/actions/workflows/build.yml/badge.svg)](https://github.com/vaxann/drop-box-cli/actions/workflows/build.yml)
+
 Drag-and-drop a file into a terminal window and beam it to an SSH server —
 get back the file's **absolute path on the server**, already copied to your
 clipboard. Handy when you need to hand a screenshot or any local file to an
@@ -43,13 +45,37 @@ Transfers use your system `ssh`/`scp`, so keys, `ssh-agent`, `ProxyJump`,
 
 ## Install
 
+### One-liner (recommended, especially on macOS)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/vaxann/drop-box-cli/main/install.sh | bash
+```
+
+The script clones the repo, builds the binary **locally** and installs it to
+`/usr/local/bin` (or `~/.local/bin` if that is not writable; override with
+`INSTALL_DIR=…`). A locally built binary carries no quarantine attribute, so
+macOS Gatekeeper does not demand any approvals — unlike a downloaded
+unsigned binary. Requires `git` and Go (`brew install go`).
+
+### With Go
+
 ```sh
 go install github.com/vaxann/drop-box-cli@latest
 ```
 
-Requires Go ≥ 1.22 to build and OpenSSH (`ssh`/`scp`) at runtime. For the
-clipboard, one of `wl-copy`, `xclip`, `xsel` or `pbcopy` (macOS) is used if
-present; without one the path is still printed.
+### Prebuilt binaries
+
+Every push to `main` builds macOS (arm64/amd64) and Linux binaries — grab
+them from the latest [Actions run](https://github.com/vaxann/drop-box-cli/actions).
+On macOS you will have to de-quarantine a downloaded binary yourself:
+`xattr -d com.apple.quarantine drop-box-cli` — the install script above
+avoids this entirely.
+
+### Runtime requirements
+
+OpenSSH (`ssh`/`scp`). For the clipboard, one of `wl-copy`, `xclip`, `xsel`
+or `pbcopy` (macOS) is used if present; without one the path is still
+printed.
 
 ## Usage
 
