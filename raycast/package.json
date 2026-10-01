@@ -1,0 +1,56 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "drop-box-cli",
+  "title": "Drop Box CLI",
+  "description": "Upload files selected in Finder to an SSH server and copy their remote paths",
+  "icon": "extension-icon.png",
+  "author": "vaxann",
+  "license": "MIT",
+  "categories": ["Developer Tools"],
+  "platforms": ["macOS"],
+  "commands": [
+    {
+      "name": "upload-finder-selection",
+      "title": "Upload Finder Selection",
+      "subtitle": "drop-box-cli",
+      "description": "Pick a server and a directory, upload the files selected in Finder and copy their remote paths.",
+      "mode": "view"
+    },
+    {
+      "name": "upload-to-last-destination",
+      "title": "Upload to Last Destination",
+      "subtitle": "drop-box-cli",
+      "description": "Upload the files selected in Finder to the most recently used server and directory.",
+      "mode": "no-view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "binaryPath",
+      "title": "drop-box-cli Path",
+      "description": "Path to the drop-box-cli binary. Leave empty to look in /usr/local/bin, ~/.local/bin, ~/go/bin and /opt/homebrew/bin.",
+      "type": "textfield",
+      "required": false,
+      "default": "",
+      "placeholder": "/usr/local/bin/drop-box-cli"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^2.6.0",
+    "@raycast/utils": "^2.3.2"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.2.0",
+    "@types/node": "22.19.17",
+    "@types/react": "19.0.10",
+    "eslint": "^9.39.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.0"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix"
+  }
+}

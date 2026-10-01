@@ -73,6 +73,9 @@ On macOS you will have to de-quarantine a downloaded binary yourself:
 `xattr -d com.apple.quarantine drop-box-cli` — the install script above
 avoids this entirely.
 
+Add `WITH_RAYCAST=1` before `bash` to also build the
+[Raycast extension](raycast/README.md).
+
 ### Runtime requirements
 
 OpenSSH (`ssh`/`scp`). For the clipboard, one of `wl-copy`, `xclip`, `xsel`
@@ -106,6 +109,12 @@ drop-box-cli last [--json]                      # most recent server and dir
 
 `send` records the upload in the history just like the interactive mode.
 To send a file literally named like a subcommand, use `drop-box-cli -- hosts`.
+
+## Raycast
+
+Select files in Finder, press a hotkey, pick a server and a directory —
+done, the remote paths are on your clipboard. Install with
+`WITH_RAYCAST=1` and see [raycast/README.md](raycast/README.md).
 
 ## Configuration
 
