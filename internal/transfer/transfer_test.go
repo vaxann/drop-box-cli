@@ -46,3 +46,19 @@ func TestResolveCmdArgs(t *testing.T) {
 		t.Errorf("args = %v, want %v", cmd.Args, want)
 	}
 }
+
+func TestBatchOptions(t *testing.T) {
+	cmd := ResolveCmd("web", "/in", BatchOptions...)
+	want := []string{"ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "--", "web",
+		`mkdir -p -- '/in' && cd -- '/in' && pwd`}
+	if !reflect.DeepEqual(cmd.Args, want) {
+		t.Errorf("resolve args = %v, want %v", cmd.Args, want)
+	}
+
+	cmd = CopyCmd("web", []string{"/tmp/a.png"}, "/in", BatchOptions...)
+	wantSh := `tar -cf - -C '/tmp/' './a.png'` +
+		` | ssh '-o' 'BatchMode=yes' '-o' 'ConnectTimeout=10' -- 'web' 'cd -- '\''/in'\'' && tar -xf -'`
+	if cmd.Args[2] != wantSh {
+		t.Errorf("copy script = %s, want %s", cmd.Args[2], wantSh)
+	}
+}

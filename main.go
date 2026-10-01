@@ -18,12 +18,27 @@ import (
 var version = "dev"
 
 func main() {
+	if len(os.Args) > 1 {
+		if run, ok := subcommands[os.Args[1]]; ok {
+			if err := run(os.Args[2:]); err != nil {
+				fatal(err.Error())
+			}
+			return
+		}
+	}
+
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(),
 			"Usage: drop-box-cli [file ...]\n\n"+
 				"Without arguments, waits for files dragged into the terminal (loop mode).\n"+
-				"With file arguments, sends them once and exits.\n\n")
+				"With file arguments, sends them once and exits.\n\n"+
+				"Non-interactive subcommands (see drop-box-cli <cmd> -h):\n"+
+				"  hosts   list servers, most used first\n"+
+				"  dirs    list target directories of a server\n"+
+				"  send    send files to a server and directory\n"+
+				"  last    print the most recently used server and directory\n\n"+
+				"To send a file literally named like a subcommand: drop-box-cli -- hosts\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()

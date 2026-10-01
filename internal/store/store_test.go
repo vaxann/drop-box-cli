@@ -136,3 +136,27 @@ func TestDirsUnknownHost(t *testing.T) {
 		t.Errorf("Dirs for unknown host = %v, want nil", got)
 	}
 }
+
+func TestLast(t *testing.T) {
+	s := openTemp(t)
+	if _, _, ok := s.Last(); ok {
+		t.Fatal("Last on empty history reported ok")
+	}
+
+	now := time.Now()
+	s.hosts = map[string]HostUse{
+		"old":   {Count: 9, LastUsed: now.Add(-time.Hour)},
+		"fresh": {Count: 1, LastUsed: now},
+	}
+	s.dirs = map[string][]HistEntry{
+		"old": {{Path: "/o", Count: 9, LastUsed: now.Add(-time.Hour)}},
+		"fresh": {
+			{Path: "/frequent", Count: 7, LastUsed: now.Add(-time.Minute)},
+			{Path: "/latest", Count: 1, LastUsed: now},
+		},
+	}
+	host, dir, ok := s.Last()
+	if !ok || host != "fresh" || dir != "/latest" {
+		t.Errorf("Last = %q, %q, %v; want fresh, /latest, true", host, dir, ok)
+	}
+}

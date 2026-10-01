@@ -188,3 +188,24 @@ func (s *Store) Touch(host, dir string) error {
 	}
 	return os.WriteFile(filepath.Join(s.dir, "history.json"), data, 0o600)
 }
+
+// Last reports the most recently used host and, on it, the most recently
+// used directory. ok is false when nothing has been sent yet.
+func (s *Store) Last() (host, dir string, ok bool) {
+	var hostTime time.Time
+	for h, use := range s.hosts {
+		if len(s.dirs[h]) > 0 && use.LastUsed.After(hostTime) {
+			host, hostTime = h, use.LastUsed
+		}
+	}
+	if host == "" {
+		return "", "", false
+	}
+	var dirTime time.Time
+	for _, e := range s.dirs[host] {
+		if dir == "" || e.LastUsed.After(dirTime) {
+			dir, dirTime = e.Path, e.LastUsed
+		}
+	}
+	return host, dir, true
+}

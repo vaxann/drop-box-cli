@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -15,6 +14,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/vaxann/drop-box-cli/internal/clipboard"
+	"github.com/vaxann/drop-box-cli/internal/core"
 	"github.com/vaxann/drop-box-cli/internal/droppath"
 	"github.com/vaxann/drop-box-cli/internal/sshconf"
 	"github.com/vaxann/drop-box-cli/internal/store"
@@ -101,22 +101,11 @@ func (m Model) Init() tea.Cmd {
 // serverPicker rebuilds the host list, most frequently used servers first
 // (ties broken by recency, then config order), so they land on keys 1-9.
 func (m *Model) serverPicker() picker {
-	m.sorted = append(m.sorted[:0:0], m.hosts...)
-	sort.SliceStable(m.sorted, func(i, j int) bool {
-		ui, uj := m.st.HostUse(m.sorted[i].Alias), m.st.HostUse(m.sorted[j].Alias)
-		if ui.Count != uj.Count {
-			return ui.Count > uj.Count
-		}
-		return ui.LastUsed.After(uj.LastUsed)
-	})
+	m.sorted = core.SortHosts(m.hosts, m.st)
 
 	items := make([]pickItem, len(m.sorted))
 	for i, h := range m.sorted {
-		desc := h.HostName
-		if h.User != "" && desc != "" {
-			desc = h.User + "@" + desc
-		}
-		items[i] = pickItem{Label: h.Alias, Desc: desc}
+		items[i] = pickItem{Label: h.Alias, Desc: core.Describe(h)}
 	}
 	title := "Send to which server?"
 	if len(m.files) == 1 {
@@ -286,10 +275,7 @@ func (m Model) finishTransfer(absDir string, err error) (tea.Model, tea.Cmd) {
 	}
 	_ = m.st.Touch(m.host, m.chosenDir)
 
-	remotePaths := make([]string, len(m.files))
-	for i, f := range m.files {
-		remotePaths[i] = absDir + "/" + path.Base(strings.TrimRight(f, "/"))
-	}
+	remotePaths := core.RemotePaths(absDir, m.files)
 	clipNote := "clipboard unavailable"
 	if tool, cerr := clipboard.Copy(strings.Join(remotePaths, "\n")); cerr == nil {
 		clipNote = "copied to clipboard via " + tool

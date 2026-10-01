@@ -90,6 +90,23 @@ drop-box-cli --version
 Keys: type to filter · `↑`/`↓` move · `1-9` quick-select · `Enter` confirm ·
 `Esc` back (quit from the first screen) · `Ctrl+C` quit anywhere.
 
+### Non-interactive mode
+
+For launchers and scripts (this is what the Raycast extension uses). These
+subcommands never prompt: ssh runs with `BatchMode=yes`, so the server must
+be reachable with a key from `ssh-agent`/Keychain. Add `--json` for
+machine-readable output; errors go to stderr with a non-zero exit code.
+
+```sh
+drop-box-cli hosts [--json]                     # servers, most used first
+drop-box-cli dirs --host gpu-box [--json]       # target dirs, most used first
+drop-box-cli send --host gpu-box --dir ~/inbox [--json] [--no-clipboard] file ...
+drop-box-cli last [--json]                      # most recent server and dir
+```
+
+`send` records the upload in the history just like the interactive mode.
+To send a file literally named like a subcommand, use `drop-box-cli -- hosts`.
+
 ## Configuration
 
 Optional. Preconfigure target directories per server in
