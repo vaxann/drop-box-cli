@@ -25,11 +25,12 @@ shared with the terminal app.
    This puts the script command into your Raycast script commands folder
    (`~/raycast-scripts`, override with `RAYCAST_SCRIPTS_DIR=…`) and, if
    Node.js is installed (`brew install node`), builds the extension in
-   `~/raycast-scripts/drop-box-cli` (override with `RAYCAST_DIR=…`).
+   `~/raycast-scripts/drop-box-cli` (override with `RAYCAST_DIR=…`) and
+   registers it with Raycast — keep Raycast running while it installs.
    Re-running the installer updates both.
-2. First time only: run **Import Extension** in Raycast and pick
-   `~/raycast-scripts/drop-box-cli` (alternatively run `npm run dev` there
-   once and stop it).
+2. Manual alternative: `cd ~/raycast-scripts/drop-box-cli && npm run dev`,
+   wait for "built extension successfully", then `Ctrl+C`. (`ray build`
+   alone is not enough — Raycast then reports "Missing executable".)
 3. Raycast Settings → Extensions → Drop Box CLI → record a hotkey for
    **Upload Finder Selection** (e.g. `⌥⌘U`) and, optionally, for
    **Upload to Last Destination**.
