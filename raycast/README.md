@@ -16,16 +16,20 @@ shared with the terminal app.
 
 ## Install
 
-1. Install `drop-box-cli` with the Raycast extension:
+1. Install `drop-box-cli` together with the Raycast pieces:
 
    ```sh
    curl -fsSL https://raw.githubusercontent.com/vaxann/drop-box-cli/main/install.sh | WITH_RAYCAST=1 bash
    ```
 
-   Requires Node.js (`brew install node`). The extension sources land in
-   `~/.local/share/drop-box-cli/raycast`.
-2. First time only: run **Import Extension** in Raycast and pick that
-   folder (alternatively run `npm run dev` there once and stop it).
+   This puts the script command into your Raycast script commands folder
+   (`~/raycast-scripts`, override with `RAYCAST_SCRIPTS_DIR=…`) and, if
+   Node.js is installed (`brew install node`), builds the extension in
+   `~/raycast-scripts/drop-box-cli` (override with `RAYCAST_DIR=…`).
+   Re-running the installer updates both.
+2. First time only: run **Import Extension** in Raycast and pick
+   `~/raycast-scripts/drop-box-cli` (alternatively run `npm run dev` there
+   once and stop it).
 3. Raycast Settings → Extensions → Drop Box CLI → record a hotkey for
    **Upload Finder Selection** (e.g. `⌥⌘U`) and, optionally, for
    **Upload to Last Destination**.
@@ -55,10 +59,11 @@ If the binary is not in `/usr/local/bin`, `~/.local/bin`, `~/go/bin` or
 
 ## Without the extension
 
-`script-commands/drop-box-cli-terminal.sh` is a Raycast Script Command that
-opens the interactive `drop-box-cli` in Terminal for the Finder selection.
-Add the `script-commands` folder in Raycast Settings → Extensions → Script
-Commands.
+`script-commands/drop-box-cli-terminal.sh` (**Upload Finder Selection in
+Terminal**) is a Raycast Script Command that opens the interactive
+`drop-box-cli` in Terminal for the Finder selection. The installer copies
+it into `~/raycast-scripts`, so it shows up in Raycast as soon as that
+folder is registered under Settings → Extensions → Script Commands.
 
 ## Development
 

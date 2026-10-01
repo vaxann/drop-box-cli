@@ -59,6 +59,9 @@ The script clones the repo, builds the binary **locally** and installs it to
 macOS Gatekeeper does not demand any approvals — unlike a downloaded
 unsigned binary. Requires `git` and Go (`brew install go`).
 
+Add `WITH_RAYCAST=1` before `bash` to also install the
+[Raycast commands](raycast/README.md) into `~/raycast-scripts`.
+
 ### With Go
 
 ```sh
@@ -72,9 +75,6 @@ them from the latest [Actions run](https://github.com/vaxann/drop-box-cli/action
 On macOS you will have to de-quarantine a downloaded binary yourself:
 `xattr -d com.apple.quarantine drop-box-cli` — the install script above
 avoids this entirely.
-
-Add `WITH_RAYCAST=1` before `bash` to also build the
-[Raycast extension](raycast/README.md).
 
 ### Runtime requirements
 
