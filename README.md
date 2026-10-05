@@ -114,7 +114,9 @@ To send a file literally named like a subcommand, use `drop-box-cli -- hosts`.
 
 Select files in Finder, press a hotkey, pick a server and a directory —
 done, the remote paths are on your clipboard. Install with
-`WITH_RAYCAST=1` and see [raycast/README.md](raycast/README.md).
+`WITH_RAYCAST=1` and see [raycast/README.md](raycast/README.md). It also
+adds a Dock drop box app and a Finder Quick Action that open the same
+Raycast flow for the dropped or right-clicked files.
 
 ## Configuration
 

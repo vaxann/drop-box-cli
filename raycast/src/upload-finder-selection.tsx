@@ -1,12 +1,12 @@
-import { Action, ActionPanel, Icon, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Icon, LaunchProps, List, showToast, Toast } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useState } from "react";
 import { Host, listDirs, listHosts } from "./cli";
-import { describeFiles, errorMessage, selectedFiles, upload } from "./upload";
+import { describeFiles, errorMessage, FilesContext, selectedFiles, upload } from "./upload";
 
-export default function Command() {
+export default function Command(props: LaunchProps<{ launchContext?: FilesContext }>) {
   // Errors are rendered as empty views instead of the default toasts.
-  const files = usePromise(selectedFiles, [], { onError: () => undefined });
+  const files = usePromise(selectedFiles, [props.launchContext], { onError: () => undefined });
   const hosts = usePromise(listHosts, [], { onError: () => undefined });
 
   if (files.error) {

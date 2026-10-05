@@ -1,13 +1,13 @@
-import { showHUD } from "@raycast/api";
+import { LaunchProps, showHUD } from "@raycast/api";
 import { lastDestination } from "./cli";
-import { errorMessage, selectedFiles, upload } from "./upload";
+import { errorMessage, FilesContext, selectedFiles, upload } from "./upload";
 
-export default async function Command() {
+export default async function Command(props: LaunchProps<{ launchContext?: FilesContext }>) {
   let files: string[];
   let host: string;
   let dir: string;
   try {
-    files = await selectedFiles();
+    files = await selectedFiles(props.launchContext);
     ({ host, dir } = await lastDestination());
   } catch (error) {
     const message = errorMessage(error);

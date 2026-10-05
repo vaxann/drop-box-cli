@@ -2,8 +2,19 @@ import { Clipboard, getSelectedFinderItems, showHUD, showToast, Toast } from "@r
 import { basename } from "node:path";
 import { send } from "./cli";
 
-// selectedFiles returns the paths selected in the frontmost Finder window.
-export async function selectedFiles(): Promise<string[]> {
+// FilesContext is the launch context the droplet app and the Finder Quick
+// Action pass via the deeplink: the files dropped on / chosen by them.
+export interface FilesContext {
+  files?: string[];
+}
+
+// selectedFiles returns the files passed in the launch context, falling back
+// to the paths selected in the frontmost Finder window.
+export async function selectedFiles(context?: FilesContext): Promise<string[]> {
+  const passed = context?.files?.filter((f) => typeof f === "string" && f !== "");
+  if (passed && passed.length > 0) {
+    return passed;
+  }
   let paths: string[];
   try {
     paths = (await getSelectedFinderItems()).map((item) => item.path);

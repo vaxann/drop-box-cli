@@ -19,6 +19,9 @@
 #                (default: ~/raycast-scripts)
 #   RAYCAST_DIR  where the extension lives
 #                (default: $RAYCAST_SCRIPTS_DIR/drop-box-cli)
+#   DROPLET_DIR  where the "Drop Box CLI" droplet app goes, macOS
+#                (default: ~/Applications); a Finder Quick Action
+#                "Upload with drop-box-cli" is installed alongside
 
 set -euo pipefail
 
@@ -56,6 +59,61 @@ CGO_ENABLED=0 go build -trimpath \
 
 info "Installing to $INSTALL_DIR/$BIN_NAME"
 install -m 0755 "$workdir/$BIN_NAME" "$INSTALL_DIR/$BIN_NAME"
+
+# install_droplet builds the "Drop Box CLI" app (files dropped on it open
+# the Raycast command with them) and the Finder Quick Action that hands
+# the selected files to it.
+install_droplet() {
+  local app_dir="${DROPLET_DIR:-$HOME/Applications}"
+  local app="$app_dir/Drop Box CLI.app"
+  local plist="$app/Contents/Info.plist"
+  local pb=/usr/libexec/PlistBuddy
+
+  info "Building the droplet app: $app"
+  mkdir -p "$app_dir"
+  rm -rf "$app"
+  osacompile -l JavaScript -o "$app" "$workdir/src/macos/droplet.js"
+
+  # Accept any file or folder dropped on the Dock icon, under a stable id.
+  $pb -c "Delete :CFBundleDocumentTypes" "$plist" 2>/dev/null || true
+  $pb -c "Add :CFBundleDocumentTypes array" \
+    -c "Add :CFBundleDocumentTypes:0 dict" \
+    -c "Add :CFBundleDocumentTypes:0:CFBundleTypeRole string Viewer" \
+    -c "Add :CFBundleDocumentTypes:0:LSItemContentTypes array" \
+    -c "Add :CFBundleDocumentTypes:0:LSItemContentTypes:0 string public.item" "$plist"
+  $pb -c "Set :CFBundleIdentifier com.github.vaxann.drop-box-cli.droplet" "$plist" 2>/dev/null ||
+    $pb -c "Add :CFBundleIdentifier string com.github.vaxann.drop-box-cli.droplet" "$plist"
+
+  # The extension icon as the app icon.
+  local iconset="$workdir/applet.iconset" src="$workdir/src/raycast/assets/extension-icon.png" size
+  mkdir -p "$iconset"
+  for size in 16 32 128 256 512; do
+    sips -z "$size" "$size" "$src" --out "$iconset/icon_${size}x${size}.png" >/dev/null
+    if [ "$size" -lt 512 ]; then
+      sips -z $((size * 2)) $((size * 2)) "$src" --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
+    fi
+  done
+  iconutil -c icns "$iconset" -o "$app/Contents/Resources/applet.icns"
+
+  # Editing the bundle broke osacompile's signature; re-sign ad hoc.
+  codesign --force --sign - "$app" >/dev/null 2>&1 || true
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+    -f "$app" 2>/dev/null || true
+
+  local services="$HOME/Library/Services"
+  local wf="$services/Upload with drop-box-cli.workflow"
+  info "Installing the Finder Quick Action: $wf"
+  mkdir -p "$services"
+  rm -rf "$wf"
+  cp -R "$workdir/src/macos/Upload with drop-box-cli.workflow" "$services/"
+  local doc="$wf/Contents/document.wflow" content
+  content="$(cat "$doc")"
+  printf '%s\n' "${content//__DROPLET_APP__/$app}" >"$doc"
+  /System/Library/CoreServices/pbs -update 2>/dev/null || true
+
+  printf '    Drag "%s" to the Dock and drop files on it;\n' "$app"
+  printf '    in Finder: right-click → Quick Actions → Upload with drop-box-cli.\n'
+}
 
 if [ "${WITH_RAYCAST:-0}" = "1" ]; then
   RAYCAST_SCRIPTS_DIR="${RAYCAST_SCRIPTS_DIR:-$HOME/raycast-scripts}"
@@ -104,6 +162,10 @@ if [ "${WITH_RAYCAST:-0}" = "1" ]; then
     fi
   else
     info "npm not found — skipping the Raycast extension (brew install node, then re-run)"
+  fi
+
+  if [ "$(uname -s)" = "Darwin" ]; then
+    install_droplet
   fi
 fi
 

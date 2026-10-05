@@ -14,6 +14,20 @@ shared with the terminal app.
 - **Upload to Last Destination** — no UI: uploads straight to the most
   recently used server and directory.
 
+## Drop box and Finder Quick Action
+
+On macOS the installer also builds **Drop Box CLI.app** in
+`~/Applications` (override with `DROPLET_DIR=…`). Drag it to the Dock and
+drop files on it — from Finder, a screenshot thumbnail, anywhere — and
+Raycast opens **Upload Finder Selection** with exactly those files.
+
+It also installs a Finder Quick Action: right-click files →
+**Quick Actions → Upload with drop-box-cli** (or bind a key in System
+Settings → Keyboard → Keyboard Shortcuts → Services).
+
+Both open the command through a Raycast deeplink, so the first time
+Raycast asks to confirm — tick "Always open" to skip it afterwards.
+
 ## Install
 
 1. Install `drop-box-cli` together with the Raycast pieces:
