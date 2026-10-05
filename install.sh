@@ -91,11 +91,11 @@ install_droplet() {
     sips -z "$size" "$size" "$src" --out "$iconset/icon_${size}x${size}.png" >/dev/null
     sips -z $((size * 2)) $((size * 2)) "$src" --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
   done
+  # osacompile ships its default icon in Assets.car (pointed at by
+  # CFBundleIconName, which wins over any .icns) plus an .icns named after
+  # the applet or the script, depending on the macOS version — drop them all.
+  rm -f "$app/Contents/Resources/Assets.car" "$app"/Contents/Resources/*.icns
   iconutil -c icns "$iconset" -o "$app/Contents/Resources/droplet.icns"
-  # osacompile ships its default icon in Assets.car and points
-  # CFBundleIconName at it, which wins over any .icns — drop both. A new
-  # file name also sidesteps Finder's icon cache.
-  rm -f "$app/Contents/Resources/Assets.car" "$app/Contents/Resources/applet.icns"
   $pb -c "Delete :CFBundleIconName" "$plist" 2>/dev/null || true
   $pb -c "Set :CFBundleIconFile droplet" "$plist" 2>/dev/null ||
     $pb -c "Add :CFBundleIconFile string droplet" "$plist"
