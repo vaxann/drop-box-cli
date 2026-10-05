@@ -84,14 +84,12 @@ install_droplet() {
   $pb -c "Set :CFBundleIdentifier com.github.vaxann.drop-box-cli.droplet" "$plist" 2>/dev/null ||
     $pb -c "Add :CFBundleIdentifier string com.github.vaxann.drop-box-cli.droplet" "$plist"
 
-  # The extension icon as the app icon.
-  local iconset="$workdir/applet.iconset" src="$workdir/src/raycast/assets/extension-icon.png" size
+  # App icon: a box with a document dropping in (1024px source).
+  local iconset="$workdir/applet.iconset" src="$workdir/src/macos/droplet-icon.png" size
   mkdir -p "$iconset"
   for size in 16 32 128 256 512; do
     sips -z "$size" "$size" "$src" --out "$iconset/icon_${size}x${size}.png" >/dev/null
-    if [ "$size" -lt 512 ]; then
-      sips -z $((size * 2)) $((size * 2)) "$src" --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
-    fi
+    sips -z $((size * 2)) $((size * 2)) "$src" --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
   done
   iconutil -c icns "$iconset" -o "$app/Contents/Resources/applet.icns"
 
